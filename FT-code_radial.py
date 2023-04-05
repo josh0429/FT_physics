@@ -7,7 +7,7 @@ import scipy as sp
 from scipy.fft import fftfreq, fftshift, ifftshift
 from scipy.fft import fft, ifft, fft2, ifft2
 
-N = 400 # Number of gridpoints
+N = 100 # Number of radial points
 Qrange = 10 # Range in Q in units of GeV
 
 # Define radial function here in units of GeV
@@ -22,17 +22,15 @@ def func(Q):
     return (GEn + tau*GMn) / (1 + tau)
 
 def FTradial(N,Qrange):
-    if N%2==0:
-        N = N+1
-    x = np.linspace(-Qrange,Qrange,N)
-    y = np.linspace(-Qrange,Qrange,N)
+    x = np.concatenate((np.linspace(0,Qrange,N,endpoint=False), np.linspace(-Qrange,0,N,endpoint=False)))
+    y = np.concatenate((np.linspace(0,Qrange,N,endpoint=False), np.linspace(-Qrange,0,N,endpoint=False)))
     xvals, yvals = np.meshgrid(x, y)
-    rho_Q = func(np.sqrt(ifftshift(xvals)**2 + ifftshift(yvals)**2))
+    rho_Q = func(np.sqrt((xvals)**2 + (yvals)**2))
     rho_b = np.real(fftshift(np.diff(x)[0]*np.diff(y)[0]*fft2(rho_Q) / ((2*np.pi)**2)))
     b = fftshift(fftfreq(len(x), np.diff(x)[0] / (2*np.pi)))
-    b = b / 5.068 # Converts to fm; comment out if you want GeV
-    rho_b = rho_b * ((5.068)**2) # Converts to fm; comment out if you want GeV
-    return np.transpose([b[N//2:N], rho_b[N//2,N//2:N]])
+    b = b / 5.068 # Converts to fm; comment out if you do not want unit conversion
+    rho_b = rho_b * ((5.068)**2) # Converts to fm; comment out if you do not want unit conversion
+    return np.transpose([b[N:2*N], rho_b[N,N:2*N]])
 
 output = FTradial(N,Qrange)
 np.savetxt('output.csv', output, delimiter=",")
